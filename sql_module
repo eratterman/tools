@@ -1,0 +1,72 @@
+#!/opt/.......
+import sys
+if sys.platform[:3] == 'lin' or sys.platform == 'darwin':
+    sys.path.append('/opt/...')
+    import pypyodbc as pydb
+else:
+    sys.path.append(r'c:\...')
+    import pyodbc as pydb
+import catalyst.auth as auth
+
+
+class SQL(object):
+    def __init__(self, sql_server, sql_database, sql_user=None, sql_pass=None, app=None):
+        if not app:
+            app = 'sql'
+
+        if sys.platform[:3] == 'win':
+            params = [('DRIVER', '{SQL Server}'), ('SERVER', sql_server),
+            ('DATABASE', sql_database), ('port', '1433'),
+            ('Integrated Security', 'true')]
+
+        elif sys.platform[:5] == 'linux':
+            if sql_user is None:
+                sql_user = auth.getAppUser(app)
+
+            if sql_pass is None:
+                sql_pass = auth.getAppPassword(app)
+
+            params = [('DRIVER', '{FreeTDS}'), ('SERVER', sql_server),
+                        ('port', '1433'), ('UID', sql_user),
+                        ('PWD', sql_pass), ('DATABASE', sql_database),
+                        ('TDS_Version', '8.0'), ('ClientCharset', 'UTF-8')]
+
+        connect_string = ';'.join('='.join(pair) for pair in params)
+        self.connection = pydb.connect(connect_string)
+        self.cursor = self.connection.cursor()
+
+
+    def sql_select(self, sql_query, fetch_one=False):
+        self.cursor.execute(sql_query)
+        if fetch_one:
+            return self.cursor.fetchone()[0]
+
+        else:
+            return self.cursor.fetchall()
+
+
+    def sql_commit(self, sql_query):
+        self.cursor.execute(sql_query)
+        update_count = self.cursor.rowcount
+        self.cursor.commit()
+        return '%s row(s) affected' % str(update_count)
+
+
+    def sql_execute(self, sql_query):
+        self.cursor.execute(sql_query)
+        self.cursor.commit()
+
+
+    def close(self):
+        self.cursor.close()
+        self.connection.close()
+
+
+    def __repr__(self):
+        return '<sql object>'
+
+
+    def __del__(self):
+        del self
+
+
