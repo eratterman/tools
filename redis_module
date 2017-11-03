@@ -1,0 +1,105 @@
+#!/opt/...
+import sys
+if sys.platform[:3] == 'lin' or sys.platform == 'darwin':
+    sys.path.append('/opt/...')
+else:
+    sys.path.append(r'c:\...')
+    sys.path.append(r'c:\...')
+import <modulename>.web as web
+import reports as report
+import socket as sock
+import json
+
+
+class RED(object):
+    def __init__(self, service=None):
+        locale = report.get_location()
+        if locale.lower() == 'us':
+            if service == '<servicename>':
+                redhost = '<url for servicename>'
+
+            elif service == 'dev':
+                redhost = '<url for servicename>'
+
+            elif service == '<servicename>':
+                redhost = '<url for servicename>'
+
+            elif service == '<servicename>':
+                redhost = '<url for servicename>'
+
+            else:
+                redhost = '<url for servicename>'
+
+        elif locale.lower() == 'japan':
+            if service == '<servicename>':
+                redhost = '<url for servicename>'
+
+            elif service == 'dev':
+                redhost = '<url for servicename>'
+
+            else:
+                redhost = '<url for servicename>'
+
+        self.redurl = 'http://%s:%s' % (redhost, 7379)
+
+
+    def keys(self, key):
+        url = '%s/keys/%s' % (self.redurl, key)
+        result = web.makeRequest(url, responseFormat='dict').body.get('keys', None)
+        if result is None:
+            return None
+        else:
+            return result[1]
+
+
+    def key_type(self, key):
+        url = '%s/type/%s' % (self.redurl, key)
+        result = web.makeRequest(url, responseFormat='dict').body.get('type', None)
+        if result is None:
+            return None
+        else:
+            return result[1]
+
+
+
+    def get_key_value(self, key):
+        url = '%s/get/%s' % (self.redurl, key)
+        result = web.makeRequest(url, responseFormat='dict').body
+        value = result.get('get', None)
+        if value is None:
+            return None
+
+        if isinstance(value, basestring):
+            value = value.replace('%2F','/')
+
+        try:
+            return json.loads(value)
+
+        except ValueError:
+            return value
+
+
+    def set_key_value(self, key, value):
+        if isinstance(value, basestring):
+            if '/' in value:
+                value = json.dumps(value)
+                value = value.replace('/', '%2F')
+
+        url = self.redurl
+        keyvalue = 'SET/%s/%s' % (key, value)
+        result = web.makeRequest(url, body=keyvalue, method='POST', responseFormat='dict')
+        return result.body.get('SET')[0]
+
+
+    def delete_key(self, key):
+        url = '%s/DEL/%s' % (self.redurl, key)
+        return web.makeRequest(url, responseFormat='dict').body.get('DEL')
+
+
+    def __repr__(self):
+        return self.redurl
+
+
+    def __del__(self):
+        del self
+
